@@ -20,13 +20,21 @@
             border: 1px solid black;
             margin-bottom: 20px;
         }
+        .full-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="mt-5">QRコードリーダー</h1>
         <div class="qr-reader-container">
-            <video id="video" class="qr-reader-video" width="300" height="200"></video>
+            <video id="video" class="qr-reader-video full-screen" width="300" height="200"></video>
             <button id="startButton" class="btn btn-primary mt-3">カメラを起動</button>
             <canvas id="canvas" width="300" height="200"></canvas>
             <div id="output" class="alert alert-success" role="alert" style="display: none;"></div>
@@ -50,7 +58,25 @@
             canvas.stroke();
         }
 
+        // カメラのアクセス許可を求めるダイアログを表示
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true); // iOS対応
+                video.play();
+                requestAnimationFrame(tick);
+            })
+            .catch(function(error) {
+                console.error("カメラのアクセスに失敗しました。", error);
+            });
+
         startButton.addEventListener('click', () => {
+            // カメラがすでに起動している場合は、何もせず終了
+            if (video.srcObject) {
+                return;
+            }
+
+            // カメラのアクセス許可を求めるダイアログを表示
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                 .then(function(stream) {
                     video.srcObject = stream;
@@ -83,6 +109,7 @@
                     drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
                     outputContainer.style.display = 'block';
                     outputContainer.textContent = code.data;
+                    video.style.display = 'none'; // 映像を消す
                 } else {
                     requestAnimationFrame(tick);
                 }
