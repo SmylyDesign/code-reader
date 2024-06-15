@@ -7,6 +7,7 @@
     <style>
         body {
             background-color: #f4f4f9;
+            font-family: Arial, sans-serif;
         }
         .container {
             margin-top: 50px;
@@ -17,33 +18,74 @@
             max-width: 600px;
             margin: 50px auto;
         }
-        #video, #canvas {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        #video {
+            display: none; /* 映像を非表示に設定 */
         }
         #canvas {
             display: none;
         }
-        #output {
-            margin-top: 20px;
-            display: none;
-            font-size: 16px;
-        }
         #startButton {
             width: 100%;
             font-size: 18px;
+        }
+        /* モーダルウィンドウのスタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            position: relative;
+            text-align: center;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-top: 10px;
+            padding: 5px;
+            resize: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-center">QRコードリーダー</h1>
-        <video id="video" controls></video>
+        <video id="video"></video> <!-- controls属性を削除 -->
         <button id="startButton" class="btn btn-primary mt-3">カメラを起動</button>
         <canvas id="canvas"></canvas>
-        <div id="output" class="alert alert-success mt-3" role="alert"></div>
+    </div>
+
+    <!-- モーダルウィンドウ -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <textarea id="modalTextArea" readonly></textarea>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
@@ -51,23 +93,15 @@
         const video = document.getElementById('video');
         const canvasElement = document.getElementById('canvas');
         const canvas = canvasElement.getContext('2d');
-        const outputContainer = document.getElementById('output');
         const startButton = document.getElementById('startButton');
-
-        function drawLine(begin, end, color) {
-            canvas.beginPath();
-            canvas.moveTo(begin.x, begin.y);
-            canvas.lineTo(end.x, end.y);
-            canvas.lineWidth = 4;
-            canvas.strokeStyle = color;
-            canvas.stroke();
-        }
+        const modal = document.getElementById('myModal');
+        const modalTextArea = document.getElementById('modalTextArea');
+        const closeButton = document.getElementsByClassName("close")[0];
 
         startButton.addEventListener('click', () => {
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                 .then(function(stream) {
                     video.srcObject = stream;
-                    video.setAttribute("playsinline", true); // iOS対応
                     video.play();
                     requestAnimationFrame(tick);
                 })
@@ -77,11 +111,13 @@
                 });
         });
 
+        closeButton.onclick = function() {
+            modal.style.display = "none";
+            requestAnimationFrame(tick);
+        }
+
         function tick() {
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvasElement.hidden = false;
-                outputContainer.style.display = 'none';
-
                 canvasElement.height = video.videoHeight;
                 canvasElement.width = video.videoWidth;
                 canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
@@ -90,23 +126,26 @@
                     inversionAttempts: "dontInvert",
                 });
 
+                // QRコードが検出された時の処理
                 if (code) {
-                    drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
-                    drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
-                    drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
-                    drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
-                    outputContainer.style.display = 'block';
-                    outputContainer.textContent = code.data;
-                    setTimeout(() => {
-                        requestAnimationFrame(tick); // 再スキャン
-                    }, 2000); // 2秒間データを表示
+                    modal.style.display = 'block';
+                    modalTextArea.value = code.data;
                 } else {
+                    modal.style.display = 'none';
                     requestAnimationFrame(tick);
                 }
             } else {
                 requestAnimationFrame(tick);
             }
         }
+
+        // モーダルを閉じる処理を追加
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+                requestAnimationFrame(tick);
+            }
+        };
     </script>
 </body>
 </html>
