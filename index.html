@@ -99,16 +99,21 @@
         const closeButton = document.getElementsByClassName("close")[0];
 
         startButton.addEventListener('click', () => {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(function(stream) {
-                    video.srcObject = stream;
-                    video.play();
-                    requestAnimationFrame(tick);
-                })
-                .catch(function(error) {
-                    console.error("カメラのアクセスに失敗しました。", error);
-                    alert("カメラへのアクセスを許可してください。");
-                });
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        video.play();
+                        requestAnimationFrame(tick);
+                    })
+                    .catch(function(error) {
+                        console.error("カメラのアクセスに失敗しました。", error);
+                        alert("カメラへのアクセスを許可してください。");
+                    });
+            } else {
+                console.error("getUserMedia is not supported on this browser");
+                alert("このブラウザではカメラを利用できません。");
+            }
         });
 
         closeButton.onclick = function() {
