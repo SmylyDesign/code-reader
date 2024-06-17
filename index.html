@@ -93,8 +93,10 @@
 
                 // QRコードが検出された時の処理
                 if (code) {
-                    // 直接コードの値をテキストエリアに表示
-                    resultTextArea.value = code.data; 
+                    // URLデコード処理を追加
+                    let decodedData = decodeURIComponent(code.data);
+                    // デコードされた値をテキストエリアに表示
+                    resultTextArea.value = decodedData; 
                 }
                 requestAnimationFrame(tick);
             } else {
