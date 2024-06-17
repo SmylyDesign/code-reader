@@ -93,7 +93,8 @@
 
                 // QRコードが検出された時の処理
                 if (code) {
-                    resultTextArea.value = code.data;
+                    // UTF-8でデコード
+                    resultTextArea.value = decodeURIComponent(escape(code.data));
                 }
                 requestAnimationFrame(tick);
             } else {
